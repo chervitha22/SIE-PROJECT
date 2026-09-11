@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GroceryDirect - Smart Kirana & Monthly List Platform</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col">
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="app.showHome()">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white font-bold text-xl shadow-md shadow-emerald-500/20">
+                    <i class="fa-solid fa-basket-shopping"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-extrabold tracking-tight text-slate-900">Grocery<span class="text-emerald-600">Direct</span></span>
+                    <span class="hidden sm:inline-block ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Smart Kirana & QR Pay</span>
+                </div>
+            </div>
+
+            <!-- Header Quick Actions & Auth Info -->
+            <div class="flex items-center space-x-3">
+                <!-- Role Badge & User Name -->
+                <div id="userInfoHeader" class="hidden items-center space-x-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+                    <span id="userRoleBadge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white uppercase">Customer</span>
+                    <span id="userNameHeader" class="text-sm font-semibold text-slate-700">Priya Verma</span>
+                </div>
+
+                <!-- Quick Login Demo Buttons -->
+                <div id="demoAuthButtons" class="flex items-center space-x-2">
+                    <button onclick="app.quickLogin('customer@gmail.com')" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-1.5 px-3 rounded-lg border border-emerald-200 transition">
+                        <i class="fa-solid fa-user text-emerald-600 mr-1"></i> Demo Customer
+                    </button>
+                    <button onclick="app.quickLogin('shop1@kirana.com')" class="text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold py-1.5 px-3 rounded-lg border border-teal-200 transition">
+                        <i class="fa-solid fa-store text-teal-600 mr-1"></i> Demo Shopkeeper
+                    </button>
+                </div>
+
+                <button id="authBtn" onclick="app.openAuthModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition shadow-sm">
+                    Login / Sign Up
+                </button>
+                <button id="logoutBtn" onclick="app.logout()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-sm px-3 py-2 rounded-xl transition">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- Toast Notifications -->
+        <div id="toast" class="hidden fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3 border border-slate-700 transition transform">
+            <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+            <span id="toastMsg" class="text-sm font-medium">Notification message</span>
+        </div>
+
+        <!-- CUSTOMER VIEW -->
+        <div id="customerView" class="hidden space-y-6">
+            <!-- Customer Navigation Tabs -->
+            <div class="flex border-b border-slate-200 space-x-8">
+                <button id="tabCustLists" onclick="app.switchCustTab('lists')" class="pb-3 text-sm font-bold text-emerald-600 border-b-2 border-emerald-600 flex items-center space-x-2">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    <span>Monthly Ration Lists</span>
+                </button>
+                <button id="tabCustStores" onclick="app.switchCustTab('stores')" class="pb-3 text-sm font-semibold text-slate-500 hover:text-slate-800 flex items-center space-x-2">
+                    <i class="fa-solid fa-store"></i>
+                    <span>Nearby Kirana Shops</span>
+                </button>
+                <button id="tabCustOrders" onclick="app.switchCustTab('orders')" class="pb-3 text-sm font-semibold text-slate-500 hover:text-slate-800 flex items-center space-x-2 relative">
+                    <i class="fa-solid fa-bag-shopping"></i>
+                    <span>My Remote Orders</span>
+                    <span id="custOrderBadge" class="hidden bg-amber-500 text-white text-xs font-extrabold px-1.5 py-0.5 rounded-full">0</span>
+                </button>
+            </div>
+
+            <!-- Tab Content 1: Monthly Lists -->
+            <div id="custListsSection" class="space-y-4">
+                <div class="flex justify-between items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">My Saved Monthly Grocery Lists</h2>
+                        <p class="text-xs text-slate-500">Save your household monthly ration items once and re-order with 1-click from local shopkeepers.</p>
+                    </div>
+                    <button onclick="app.openCreateListModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition flex items-center space-x-2 shadow-sm">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>New Monthly List</span>
+                    </button>
+                </div>
+                <div id="monthlyListsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- Dynamic Monthly Lists Cards -->
+                </div>
+            </div>
+
+            <!-- Tab Content 2: Stores Browser -->
+            <div id="custStoresSection" class="hidden space-y-4">
+                <div class="flex justify-between items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Nearby Grocery Shopkeepers</h2>
+                        <p class="text-xs text-slate-500">Select a verified local shopkeeper to receive final unit prices and digital QR payment links.</p>
+                    </div>
+                    <div class="w-64">
+                        <input type="text" id="pincodeSearch" placeholder="Filter by Pincode (e.g. 560038)" oninput="app.filterStores()" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                </div>
+                <div id="storesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- Dynamic Store Cards -->
+                </div>
+            </div>
+
+            <!-- Tab Content 3: Customer Orders -->
+            <div id="custOrdersSection" class="hidden space-y-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">My Orders & QR Payments</h2>
+                        <p class="text-xs text-slate-500">Track final quote pricing, review itemized bills, and complete UPI QR code payments.</p>
+                    </div>
+                    <button onclick="app.loadCustomerOrders()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-3 rounded-lg border border-slate-300">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Refresh Orders
+                    </button>
+                </div>
+                <div id="customerOrdersList" class="space-y-4">
+                    <!-- Dynamic Customer Order Cards -->
+                </div>
+            </div>
+        </div>
+
+        <!-- SHOPKEEPER VIEW -->
+        <div id="shopkeeperView" class="hidden space-y-6">
+            <!-- Shopkeeper Header Banner -->
+            <div class="bg-gradient-to-r from-teal-800 to-emerald-900 text-white p-6 rounded-3xl shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <div class="flex items-center space-x-3">
+                        <span class="bg-teal-700/60 text-teal-200 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Shopkeeper Console</span>
+                        <span id="shopStatusBadge" class="bg-emerald-400 text-slate-900 text-xs font-extrabold px-2.5 py-0.5 rounded-full">Active</span>
+                    </div>
+                    <h1 id="shopNameTitle" class="text-2xl font-extrabold mt-1">Sharma General Kirana Store</h1>
+                    <p id="shopDetailSubtitle" class="text-xs text-teal-100/80 mt-0.5">Owner: Ramesh Sharma | UPI ID: <span class="font-mono bg-teal-900/50 px-2 py-0.5 rounded text-teal-300" id="shopUpiDisplay">sharmakirana@upi</span></p>
+                </div>
+                <button onclick="app.openShopProfileModal()" class="bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-4 py-2.5 rounded-xl border border-white/20 transition flex items-center space-x-2">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Edit Store & UPI QR Settings</span>
+                </button>
+            </div>
+
+            <!-- Shopkeeper Tabs -->
+            <div class="flex border-b border-slate-200 space-x-8">
+                <button id="tabShopOrders" onclick="app.switchShopTab('orders')" class="pb-3 text-sm font-bold text-teal-700 border-b-2 border-teal-700 flex items-center space-x-2">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Incoming Remote Orders</span>
+                    <span id="shopPendingCount" class="bg-amber-500 text-white text-xs font-extrabold px-2 py-0.5 rounded-full">0</span>
+                </button>
+                <button id="tabShopHistory" onclick="app.switchShopTab('history')" class="pb-3 text-sm font-semibold text-slate-500 hover:text-slate-800 flex items-center space-x-2">
+                    <i class="fa-solid fa-receipt"></i>
+                    <span>Fulfilled & Paid Orders</span>
+                </button>
+            </div>
+
+            <!-- Orders Table / List for Shopkeeper -->
+            <div id="shopOrdersSection" class="space-y-4">
+                <div id="shopkeeperOrdersList" class="space-y-4">
+                    <!-- Dynamic Shopkeeper Orders -->
+                </div>
+            </div>
+        </div>
+
+        <!-- UNAUTHENTICATED WELCOME HERO (Shown when logged out) -->
+        <div id="guestView" class="py-12 text-center max-w-4xl mx-auto space-y-8">
+            <div class="inline-flex items-center space-x-2 bg-emerald-50 border border-emerald-200 px-4 py-1.5 rounded-full text-emerald-800 text-xs font-bold shadow-sm">
+                <i class="fa-solid fa-store"></i>
+                <span>Digitizing Local Kiranas & Monthly Ration Orders</span>
+            </div>
+            
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                Connect with Nearby Kirana Shopkeepers, Manage Monthly Lists & Pay via <span class="gradient-text">UPI QR Code</span>
+            </h1>
+
+            <p class="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto">
+                No more paper slips or price guessing! Create your monthly grocery list, send remote orders directly to your trusted local shopkeeper, receive itemized price quotes, and complete payments seamlessly.
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 text-left">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-lg">Monthly Lists</h3>
+                    <p class="text-xs text-slate-500">Create reusable ration templates for household staples, oils, pulses, and cleaners.</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="w-12 h-12 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-calculator"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-lg">Shopkeeper Final Quote</h3>
+                    <p class="text-xs text-slate-500">Shopkeeper verifies stock, inputs accurate unit rates, and sends transparent total pricing.</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-qrcode"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-lg">Instant QR Code Pay</h3>
+                    <p class="text-xs text-slate-500">Scan standard dynamic UPI QR code on your phone using Paytm, GPay, or PhonePe.</p>
+                </div>
+            </div>
+
+            <div class="pt-4 flex flex-wrap justify-center gap-4">
+                <button onclick="app.quickLogin('customer@gmail.com')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base px-6 py-3.5 rounded-2xl transition shadow-lg shadow-emerald-600/30 flex items-center space-x-2">
+                    <i class="fa-solid fa-user"></i>
+                    <span>Try Demo Customer Account</span>
+                </button>
+                <button onclick="app.quickLogin('shop1@kirana.com')" class="bg-teal-700 hover:bg-teal-800 text-white font-bold text-base px-6 py-3.5 rounded-2xl transition shadow-lg shadow-teal-700/30 flex items-center space-x-2">
+                    <i class="fa-solid fa-shop"></i>
+                    <span>Try Demo Shopkeeper Account</span>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODALS CONTAINER -->
+
+    <!-- 1. Auth Modal -->
+    <div id="authModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-5">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 id="authModalTitle" class="text-xl font-bold text-slate-900">Login to GroceryDirect</h3>
+                <button onclick="app.closeModal('authModal')" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="flex rounded-xl bg-slate-100 p-1">
+                <button id="authTabLogin" onclick="app.toggleAuthTab('login')" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-white shadow-sm text-slate-900">Login</button>
+                <button id="authTabReg" onclick="app.toggleAuthTab('register')" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-500">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" onsubmit="app.handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+                    <input type="email" id="loginEmail" required class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Password</label>
+                    <input type="password" id="loginPassword" required class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition">
+                    Login
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" onsubmit="app.handleRegister(event)" class="hidden space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Full Name / Shop Owner</label>
+                    <input type="text" id="regName" required class="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+                    <input type="email" id="regEmail" required class="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Password</label>
+                    <input type="password" id="regPassword" required class="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">I am registering as a:</label>
+                    <select id="regRole" onchange="app.toggleRegShopFields()" class="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 outline-none bg-white font-bold text-emerald-700">
+                        <option value="customer">Customer (Place Grocery Orders)</option>
+                        <option value="shopkeeper">Shopkeeper (Manage Shop & Receive Orders)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
+                    <input type="tel" id="regPhone" required placeholder="10-digit mobile number" class="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 outline-none">
+                </div>
+
+                <!-- Shopkeeper specific fields -->
+                <div id="regShopkeeperFields" class="hidden space-y-3 pt-2 border-t border-slate-200">
+                    <div>
+                        <label class="block text-xs font-bold text-teal-800 mb-1">Shop Name</label>
+                        <input type="text" id="regShopName" placeholder="e.g. Laxmi Kirana Stores" class="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-teal-800 mb-1">UPI ID for Receiving Payments</label>
+                        <input type="text" id="regUpiId" placeholder="e.g. storename@upi or 9876543210@paytm" class="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-teal-800 mb-1">Shop Address & Area Pincode</label>
+                        <input type="text" id="regAddress" placeholder="Address and 6-digit pincode" class="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 outline-none">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition">
+                    Create Account
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. Create / Edit Monthly List Modal -->
+    <div id="monthlyListModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-lg font-bold text-slate-900" id="listModalTitle">Create New Monthly Grocery List</h3>
+                <button onclick="app.closeModal('monthlyListModal')" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 overflow-y-auto flex-1 pr-1">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">List Title</label>
+                    <input type="text" id="listTitleInput" placeholder="e.g. Standard Household Ration" class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-300 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Notes / Description (Optional)</label>
+                    <input type="text" id="listDescInput" placeholder="e.g. Monthly staples for 4 people" class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-300 outline-none">
+                </div>
+
+                <div class="pt-2">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs font-bold text-slate-900 uppercase tracking-wider">List Items & Quantities</label>
+                        <button type="button" onclick="app.addListRow()" class="text-xs text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                            + Add Item
+                        </button>
+                    </div>
+                    <div id="listItemsRows" class="space-y-2">
+                        <!-- Dynamic item rows -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-3 flex justify-end space-x-3">
+                <button onclick="app.closeModal('monthlyListModal')" class="px-4 py-2 rounded-xl border border-slate-300 text-sm font-semibold text-slate-600">Cancel</button>
+                <button onclick="app.saveMonthlyList()" class="px-5 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold shadow-md hover:bg-emerald-700">Save Monthly List</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Remote Order Creator Modal -->
+    <div id="createOrderModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Place Remote Order to Shopkeeper</h3>
+                    <p class="text-xs text-slate-500" id="orderTargetShopName">Sharma General Kirana Store</p>
+                </div>
+                <button onclick="app.closeModal('createOrderModal')" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 overflow-y-auto flex-1 pr-1">
+                <input type="hidden" id="orderShopId">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Delivery Address</label>
+                    <textarea id="orderDeliveryAddress" rows="2" class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-300 outline-none" placeholder="Enter full delivery address with landmark..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Instructions for Shopkeeper (Optional)</label>
+                    <input type="text" id="orderNotes" placeholder="e.g. Call before delivery, deliver after 6 PM" class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-300 outline-none">
+                </div>
+
+                <div class="pt-2">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs font-bold text-slate-900 uppercase tracking-wider">Requested Grocery Items</label>
+                        <button type="button" onclick="app.addOrderRow()" class="text-xs text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                            + Add Item
+                        </button>
+                    </div>
+                    <div id="orderItemsRows" class="space-y-2">
+                        <!-- Order item rows -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-3 flex justify-end space-x-3">
+                <button onclick="app.closeModal('createOrderModal')" class="px-4 py-2 rounded-xl border border-slate-300 text-sm font-semibold text-slate-600">Cancel</button>
+                <button onclick="app.submitRemoteOrder()" class="px-5 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold shadow-md hover:bg-emerald-700">Submit Remote Order</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Shopkeeper Pricing Desk Modal -->
+    <div id="pricingModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[92vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Set Unit Prices & Send Bill Quote</h3>
+                    <p class="text-xs text-slate-500" id="pricingOrderSubtitle">Order #12 | Customer: Priya Verma</p>
+                </div>
+                <button onclick="app.closeModal('pricingModal')" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 overflow-y-auto flex-1 pr-1">
+                <input type="hidden" id="pricingOrderId">
+
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-600">
+                    <span class="font-bold text-slate-800">Customer Address: </span><span id="pricingCustomerAddress">...</span>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="grid grid-cols-12 gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 pb-1">
+                        <span class="col-span-4">Item Requested</span>
+                        <span class="col-span-2 text-center">Req Qty</span>
+                        <span class="col-span-3">Unit Price (₹)</span>
+                        <span class="col-span-3 text-right">Line Total (₹)</span>
+                    </div>
+                    <div id="pricingItemsList" class="space-y-2">
+                        <!-- Dynamic pricing rows -->
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-200 pt-3 space-y-2">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="font-semibold text-slate-700">Subtotal:</span>
+                        <span class="font-bold text-slate-900" id="pricingSubtotalDisplay">₹0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <label class="font-semibold text-slate-700">Delivery / Handling Fee (₹):</label>
+                        <input type="number" id="pricingDeliveryFee" min="0" value="20" oninput="app.recalculateShopTotals()" class="w-24 text-right text-sm px-2 py-1 rounded-lg border border-slate-300 font-bold outline-none">
+                    </div>
+                    <div class="flex justify-between items-center text-base font-extrabold bg-teal-50 p-3 rounded-xl border border-teal-200 text-teal-950">
+                        <span>Grand Total Price:</span>
+                        <span id="pricingGrandTotalDisplay">₹0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-3 flex justify-end space-x-3">
+                <button onclick="app.closeModal('pricingModal')" class="px-4 py-2 rounded-xl border border-slate-300 text-sm font-semibold text-slate-600">Cancel</button>
+                <button onclick="app.saveOrderPricing()" class="px-5 py-2 rounded-xl bg-teal-700 text-white text-sm font-bold shadow-md hover:bg-teal-800 flex items-center space-x-2">
+                    <i class="fa-solid fa-qrcode"></i>
+                    <span>Generate QR Code & Send Quote</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Payment QR Code & Bill Receipt Modal (For Customer) -->
+    <div id="qrPaymentModal" class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[92vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Digital Payment via UPI QR Code</h3>
+                    <p class="text-xs text-slate-500" id="qrShopTitle">Sharma General Kirana Store</p>
+                </div>
+                <button onclick="app.closeModal('qrPaymentModal')" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 overflow-y-auto flex-1 pr-1 text-center">
+                <input type="hidden" id="qrOrderId">
+
+                <!-- Dynamic QR Image -->
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 inline-block shadow-inner">
+                    <img id="qrImageElement" src="" alt="UPI Payment QR Code" class="w-56 h-56 mx-auto rounded-lg shadow-md border border-slate-300">
+                    <div class="mt-3 space-y-1">
+                        <p class="text-xs font-semibold text-slate-500">Scan using any UPI App (GPay / PhonePe / Paytm)</p>
+                        <p class="text-sm font-extrabold text-emerald-700" id="qrUpiString">UPI ID: sharmakirana@upi</p>
+                    </div>
+                </div>
+
+                <!-- Final Amount Card -->
+                <div class="bg-emerald-600 text-white p-3.5 rounded-2xl shadow-sm flex justify-between items-center px-6">
+                    <span class="text-sm font-medium">Final Amount Payable:</span>
+                    <span class="text-2xl font-black" id="qrAmountDisplay">₹1,470.00</span>
+                </div>
+
+                <!-- Itemized Bill Accordion -->
+                <div class="text-left bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1 text-xs">
+                    <span class="font-bold text-slate-700 block mb-1">Itemized Summary:</span>
+                    <div id="qrBillItems" class="space-y-1 max-h-32 overflow-y-auto">
+                        <!-- Items list -->
+                    </div>
+                </div>
+
+                <!-- Payment Reference Submission -->
+                <div class="text-left bg-amber-50 p-3.5 rounded-2xl border border-amber-200 space-y-2">
+                    <label class="block text-xs font-bold text-amber-900">Step 2: Enter Transaction Reference / UTR Number after paying</label>
+                    <input type="text" id="paymentRefInput" placeholder="e.g. 425198762314 or UPI Ref ID" class="w-full text-xs px-3 py-2 rounded-xl border border-amber-300 outline-none font-mono font-bold bg-white text-slate-900">
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-3 flex justify-end space-x-3">
+                <button onclick="app.closeModal('qrPaymentModal')" class="px-4 py-2 rounded-xl border border-slate-300 text-sm font-semibold text-slate-600">Close</button>
+                <button onclick="app.confirmPaymentSubmitted()" class="px-5 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold shadow-md hover:bg-emerald-700 flex items-center space-x-2">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Confirm Payment Sent</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Shopkeeper Store Settings Modal -->
+    <div id="shopProfileModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-lg font-bold text-slate-900">Edit Shop Profile & UPI QR ID</h3>
+                <button onclick="app.closeModal('shopProfileModal')" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Shop Name</label>
+                    <input type="text" id="profShopName" class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-300 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Owner Name</label>
+                    <input type="text" id="profOwnerName" class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-300 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">UPI ID (Used for generating dynamic QR codes)</label>
+                    <input type="text" id="profUpiId" placeholder="e.g. sharmakirana@upi" class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-300 outline-none font-mono font-bold text-teal-800">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Contact Phone</label>
+                    <input type="text" id="profPhone" class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-300 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Area Pincode</label>
+                    <input type="text" id="profPincode" class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-300 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Shop Address</label>
+                    <input type="text" id="profAddress" class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-300 outline-none">
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-3 flex justify-end space-x-3">
+                <button onclick="app.closeModal('shopProfileModal')" class="px-4 py-2 rounded-xl border border-slate-300 text-sm font-semibold text-slate-600">Cancel</button>
+                <button onclick="app.saveShopProfile()" class="px-5 py-2 rounded-xl bg-teal-700 text-white text-sm font-bold shadow-md hover:bg-teal-800">Save Shop Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main JavaScript App Logic -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
